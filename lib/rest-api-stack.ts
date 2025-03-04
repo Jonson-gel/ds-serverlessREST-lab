@@ -107,6 +107,23 @@ export class RestAPIStack extends cdk.Stack {
       }
     );
 
+    const getMovieWithCastFn = new lambdanode.NodejsFunction(
+      this,
+      "GetMovieWithCastFn",
+      {
+        architecture: lambda.Architecture.ARM_64,
+        runtime: lambda.Runtime.NODEJS_18_X,
+        entry: `${__dirname}/../lambdas/getMovieWithCast.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          MOVIES_TABLE_NAME: moviesTable.tableName,
+          CAST_TABLE_NAME: movieCastsTable.tableName,
+          REGION: 'eu-west-1',
+        },
+      }
+    );
+
     new custom.AwsCustomResource(this, "moviesddbInitData", {
       onCreate: {
         service: "DynamoDB",
@@ -130,6 +147,7 @@ export class RestAPIStack extends cdk.Stack {
     moviesTable.grantReadWriteData(newMovieFn)
     moviesTable.grantWriteData(deleteMovieFn)
     movieCastsTable.grantReadData(getMovieCastMembersFn);
+    movieCastsTable.grantReadData(getMovieWithCastFn);
 
     // REST API 
     const api = new apig.RestApi(this, "RestAPI", {
